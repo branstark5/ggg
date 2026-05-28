@@ -4,36 +4,27 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from google import genai
 
-# 1. Page Configuration & Layout
+# 1. Page Configuration & Custom Theme
 st.set_page_config(
     page_title="Burmese Subtitle Translator", 
     page_icon="🌿", 
     layout="wide"
 )
 
-# Custom injection for a clean interface design
+# Custom injection to ensure a beautiful interface design
 st.markdown("""
     <style>
     .main .block-container { max-width: 1100px; padding-top: 2rem; }
-    div.stButton > button:first-child { background-color: #10b981; color: white; border: none; min-width: 200px; }
+    div.stButton > button:first-child { background-color: #10b981; color: white; border: none; min-width: 220px; font-weight: bold; }
     div.stButton > button:first-child:hover { background-color: #059669; color: white; }
     </style>
 """, unsafe_allow_html=True)
 
 st.title("🎬 Etheris Space - Premium Subtitle Translator")
 st.caption("Parallel-threaded SRT processing built for Gemini 3.1 & 3.5 series engines.")
+st.write("---")
 
-# 2. Secure API Key Initialization 
-api_key = st.secrets.get("GEMINI_API_KEY") or st.sidebar.text_input("Enter Gemini API Key", type="password")
-
-if not api_key:
-    st.warning("⚠️ Access Key Missing. Please set up GEMINI_API_KEY inside your platform deployment settings to proceed.")
-    st.stop()
-
-# Initialize the modern unified Google GenAI client
-client = genai.Client(api_key=api_key)
-
-# 3. Dynamic User Configuration Dashboard (With Hover Tooltips Built-In!)
+# 2. Dynamic User Configuration Dashboard (Always Displays Now!)
 col1, col2, col3 = st.columns(3)
 
 with col1:
@@ -61,13 +52,15 @@ with col3:
         help="How many chunks fly out to Google's servers at the exact same time.\n\n• 1 Thread: Safe but slow (sequential processing).\n\n• 5 Threads: 500% faster processing. Great balance.\n\n• 10 Threads: Maximum speed. Safe to use on your paid Tier 1 account without hitting rate limits!"
     )
 
-# 4. SRT Parsing Helper Engine
+st.write("---")
+
+# 3. SRT Parsing Helper Engine
 def parse_srt(srt_text):
     blocks = re.split(r'\n\s*\n', srt_text.strip())
     return [b for b in blocks if b.strip()]
 
-# 5. Core Translation Processing Node
-def translate_chunk(chunk_index, chunk_data, model_name):
+# 4. Core Translation Processing Node
+def translate_chunk(client, chunk_index, chunk_data, model_name):
     system_prompt = f"""You are an expert film localization translator specializing in translating English subtitles into natural, spoken Burmese (လူပြောစကား).
 
 CRITICAL RULES:
@@ -84,7 +77,6 @@ SRT Chunk to Translate:
             contents=system_prompt
         )
         
-        # Safely extract token tracking data
         input_tokens = getattr(response.usage_metadata, 'prompt_token_count', 0)
         output_tokens = getattr(response.usage_metadata, 'candidates_token_count', 0)
         
@@ -105,78 +97,85 @@ SRT Chunk to Translate:
             "output_tokens": 0
         }
 
-# 6. Primary UI Execution Lifecycle
+# 5. Primary UI File Uploader
 uploaded_file = st.file_uploader("Upload your target English SRT file", type=["srt"])
 
 if uploaded_file is not None:
     srt_content = uploaded_file.read().decode("utf-8")
     blocks = parse_srt(srt_content)
     
-    # Slice the file based on the slider setting
     chunks = [blocks[i:i + chunk_size] for i in range(0, len(blocks), chunk_size)]
-    st.info(f"Loaded {len(blocks):,} subtitle elements mapped across {len(chunks)} processing chunks.")
+    st.info(f"📋 Loaded {len(blocks):,} subtitle elements mapped across {len(chunks)} processing chunks.")
     
     if st.button("🚀 Execute Subtitle Translation", type="primary"):
-        progress_bar = st.progress(0)
-        status_text = st.empty()
         
-        translated_chunks = [None] * len(chunks)
-        total_input_tokens = 0
-        total_output_tokens = 0
-        error_tracking_count = 0
-        
-        start_time = time.time()
-        
-        # Asynchronous Parallel Multi-Threading Loop
-        with ThreadPoolExecutor(max_workers=parallel_workers) as executor:
-            future_to_chunk = {
-                executor.submit(translate_chunk, idx, "\n\n".join(chunk), model_choice): idx 
-                for idx, chunk in enumerate(chunks)
-            }
-            
-            completed = 0
-            for future in as_completed(future_to_chunk):
-                idx = future_to_chunk[future]
-                result = future.result()
-                
-                translated_chunks[idx] = result["text"]
-                total_input_tokens += result["input_tokens"]
-                total_output_tokens += result["output_tokens"]
-                
-                if not result["success"]:
-                    error_tracking_count += 1
-                
-                completed += 1
-                progress_bar.progress(completed / len(chunks))
-                status_text.text(f"Processing structural volume: {completed}/{len(chunks)} chunks finalized...")
-        
-        end_time = time.time()
-        status_text.empty()
-        
-        # Reconstruct final file layout
-        final_srt = "\n\n".join(translated_chunks)
-        
-        if error_tracking_count > 0:
-            st.warning(f"⚠️ App finished execution with {error_tracking_count} processing errors. Bypassed modules retained English text fields.")
+        # Safe API Key validation check ONLY on execution trigger
+        api_key = st.secrets.get("GEMINI_API_KEY")
+        if not api_key:
+            st.error("⚠️ Access Key Missing! Please set up your GEMINI_API_KEY inside your Streamlit Cloud Secrets dashboard to run translations.")
         else:
-            st.success(f"🎉 Job completed successfully in {round(end_time - start_time, 1)} seconds!")
-        
-        # 7. Real-Time Cost Dashboard Interface
-        st.markdown(f"""
-            <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 18px; border-radius: 8px; margin-top: 15px; margin-bottom: 20px; font-family: sans-serif;">
-                <h4 style="margin: 0 0 12px 0; color: #1e293b;">📊 Execution Cost Analytics Tracker</h4>
-                <div style="display: flex; gap: 40px; font-size: 0.95rem; color: #334155;">
-                    <p style="margin: 0;">📥 <b>Processed Input:</b> {total_input_tokens:,} tokens</p>
-                    <p style="margin: 0;">📤 <b>Generated Output:</b> {total_output_tokens:,} tokens</p>
-                    <p style="margin: 0; color: #10b981;">⚙️ <b>Active Host Engine:</b> <code>{model_choice}</code></p>
+            # Initialize client safely inside the runtime block
+            client = genai.Client(api_key=api_key)
+            
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+            
+            translated_chunks = [None] * len(chunks)
+            total_input_tokens = 0
+            total_output_tokens = 0
+            error_tracking_count = 0
+            
+            start_time = time.time()
+            
+            # Asynchronous Parallel Multi-Threading Loop
+            with ThreadPoolExecutor(max_workers=parallel_workers) as executor:
+                future_to_chunk = {
+                    executor.submit(translate_chunk, client, idx, "\n\n".join(chunk), model_choice): idx 
+                    for idx, chunk in enumerate(chunks)
+                }
+                
+                completed = 0
+                for future in as_completed(future_to_chunk):
+                    idx = future_to_chunk[future]
+                    result = future.result()
+                    
+                    translated_chunks[idx] = result["text"]
+                    total_input_tokens += result["input_tokens"]
+                    total_output_tokens += result["output_tokens"]
+                    
+                    if not result["success"]:
+                        error_tracking_count += 1
+                    
+                    completed += 1
+                    progress_bar.progress(completed / len(chunks))
+                    status_text.text(f"Processing: {completed}/{len(chunks)} chunks finalized...")
+            
+            end_time = time.time()
+            status_text.empty()
+            
+            final_srt = "\n\n".join(translated_chunks)
+            
+            if error_tracking_count > 0:
+                st.warning(f"⚠️ App finished with {error_tracking_count} processing errors. Failed blocks kept original English text.")
+            else:
+                st.success(f"🎉 Job completed successfully in {round(end_time - start_time, 1)} seconds!")
+            
+            # 6. Real-Time Cost Dashboard Interface
+            st.markdown(f"""
+                <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 18px; border-radius: 8px; margin-top: 15px; margin-bottom: 20px; font-family: sans-serif;">
+                    <h4 style="margin: 0 0 12px 0; color: #1e293b;">📊 Execution Cost Analytics Tracker</h4>
+                    <div style="display: flex; gap: 40px; font-size: 0.95rem; color: #334155;">
+                        <p style="margin: 0;">📥 <b>Processed Input:</b> {total_input_tokens:,} tokens</p>
+                        <p style="margin: 0;">📤 <b>Generated Output:</b> {total_output_tokens:,} tokens</p>
+                        <p style="margin: 0; color: #10b981;">⚙️ <b>Active Host Engine:</b> <code>{model_choice}</code></p>
+                    </div>
                 </div>
-            </div>
-        """, unsafe_allow_html=True)
-        
-        # Local File Download Trigger
-        st.download_button(
-            label="💾 Download Burmese SRT File",
-            data=final_srt,
-            file_name=f"Burmese_Localized_{uploaded_file.name}",
-            mime="text/plain"
-        )
+            """, unsafe_allow_html=True)
+            
+            # Local File Download Trigger
+            st.download_button(
+                label="💾 Download Burmese SRT File",
+                data=final_srt,
+                file_name=f"Burmese_Localized_{uploaded_file.name}",
+                mime="text/plain"
+            )

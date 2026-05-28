@@ -159,6 +159,13 @@ if uploaded_file is not None:
                 st.warning(f"⚠️ App finished with {error_tracking_count} processing errors. Failed blocks kept original English text.")
             else:
                 st.success(f"🎉 Job completed successfully in {round(end_time - start_time, 1)} seconds!")
+                # --- THE BOUNCER: Security Lock ---
+passcode = st.sidebar.text_input("🔒 Enter Access Passcode", type="password")
+
+if passcode != st.secrets.get("APP_PASSCODE"):
+    st.warning("🚫 Access Denied: Please enter the correct passcode in the sidebar to unlock Etheris Space.")
+    st.stop() # This completely freezes the site and hides everything below it
+# ----------------------------------
             
             # 6. Real-Time Cost Dashboard Interface
             st.markdown(f"""

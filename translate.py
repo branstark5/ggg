@@ -4,18 +4,18 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from google import genai
 
-# 1. Page Configuration & Layout Customization
+# 1. Page Configuration & Layout
 st.set_page_config(
     page_title="Burmese Subtitle Translator", 
     page_icon="🌿", 
     layout="wide"
 )
 
-# Custom injection to preserve your soft-green dashboard interface design
+# Custom injection for a clean interface design
 st.markdown("""
     <style>
     .main .block-container { max-width: 1100px; padding-top: 2rem; }
-    div.stButton > button:first-child { background-color: #10b981; color: white; border: none; }
+    div.stButton > button:first-child { background-color: #10b981; color: white; border: none; min-width: 200px; }
     div.stButton > button:first-child:hover { background-color: #059669; color: white; }
     </style>
 """, unsafe_allow_html=True)
@@ -24,7 +24,6 @@ st.title("🎬 Etheris Space - Premium Subtitle Translator")
 st.caption("Parallel-threaded SRT processing built for Gemini 3.1 & 3.5 series engines.")
 
 # 2. Secure API Key Initialization 
-# Looks for Streamlit Advanced Secrets or falls back to an interactive sidebar input
 api_key = st.secrets.get("GEMINI_API_KEY") or st.sidebar.text_input("Enter Gemini API Key", type="password")
 
 if not api_key:
@@ -34,22 +33,36 @@ if not api_key:
 # Initialize the modern unified Google GenAI client
 client = genai.Client(api_key=api_key)
 
-# 3. Dynamic User Configuration Dashboard
+# 3. Dynamic User Configuration Dashboard (With Hover Tooltips Built-In!)
 col1, col2, col3 = st.columns(3)
+
 with col1:
     model_choice = st.selectbox(
         "AI Engine Selection", 
         ["gemini-3.1-flash-lite", "gemini-3.5-flash", "gemini-2.5-flash"],
-        help="3.1 Flash-Lite is optimized for hyper-budget scale. 3.5 Flash delivers high-end localization quality."
+        help="• gemini-3.1-flash-lite: Best for hyper-budget scale. Costs 50% less than standard flash.\n\n• gemini-3.5-flash: Delivers high-end localization quality and natural dialogue flows."
     )
+
 with col2:
-    chunk_size = st.slider("Lines per Request Chunk", 20, 150, 75)
+    chunk_size = st.slider(
+        "Lines per Request (Chunk Size)", 
+        min_value=20, 
+        max_value=150, 
+        value=75,
+        help="How many subtitle blocks are sent to the AI at one time.\n\n• Low (30-50): Super fast, completely safe, but AI might lose scene context.\n\n• High (120-150): Best story context and dialogue flow, but takes longer per chunk.\n\n💡 Sweet Spot: 75 to 85 lines."
+    )
+
 with col3:
-    parallel_workers = st.slider("Parallel Active Threads", 1, 10, 5)
+    parallel_workers = st.slider(
+        "Parallel Active Threads (Speed Control)", 
+        min_value=1, 
+        max_value=10, 
+        value=5,
+        help="How many chunks fly out to Google's servers at the exact same time.\n\n• 1 Thread: Safe but slow (sequential processing).\n\n• 5 Threads: 500% faster processing. Great balance.\n\n• 10 Threads: Maximum speed. Safe to use on your paid Tier 1 account without hitting rate limits!"
+    )
 
 # 4. SRT Parsing Helper Engine
 def parse_srt(srt_text):
-    # Splits file cleanly while preserving line blocks safely
     blocks = re.split(r'\n\s*\n', srt_text.strip())
     return [b for b in blocks if b.strip()]
 
@@ -71,7 +84,7 @@ SRT Chunk to Translate:
             contents=system_prompt
         )
         
-        # Safely extract generated text and backend token metric structures
+        # Safely extract token tracking data
         input_tokens = getattr(response.usage_metadata, 'prompt_token_count', 0)
         output_tokens = getattr(response.usage_metadata, 'candidates_token_count', 0)
         
@@ -83,7 +96,6 @@ SRT Chunk to Translate:
             "output_tokens": output_tokens
         }
     except Exception as e:
-        # Graceful error bypass: retains original text block to prevent file breakage
         return {
             "index": chunk_index,
             "text": chunk_data,
@@ -93,16 +105,16 @@ SRT Chunk to Translate:
             "output_tokens": 0
         }
 
-# 6. Primary Execution Lifecycle
+# 6. Primary UI Execution Lifecycle
 uploaded_file = st.file_uploader("Upload your target English SRT file", type=["srt"])
 
 if uploaded_file is not None:
     srt_content = uploaded_file.read().decode("utf-8")
     blocks = parse_srt(srt_content)
     
-    # Bundle individual blocks into structural arrays based on slider selections
+    # Slice the file based on the slider setting
     chunks = [blocks[i:i + chunk_size] for i in range(0, len(blocks), chunk_size)]
-    st.info(f"Loaded {len(blocks):,} subtitle elements mapped across {len(chunks)} execution chunks.")
+    st.info(f"Loaded {len(blocks):,} subtitle elements mapped across {len(chunks)} processing chunks.")
     
     if st.button("🚀 Execute Subtitle Translation", type="primary"):
         progress_bar = st.progress(0)
@@ -141,7 +153,7 @@ if uploaded_file is not None:
         end_time = time.time()
         status_text.empty()
         
-        # Reconstruct structural layout output
+        # Reconstruct final file layout
         final_srt = "\n\n".join(translated_chunks)
         
         if error_tracking_count > 0:
@@ -149,7 +161,7 @@ if uploaded_file is not None:
         else:
             st.success(f"🎉 Job completed successfully in {round(end_time - start_time, 1)} seconds!")
         
-        # 7. Analytics Dashboard Reporting Interface
+        # 7. Real-Time Cost Dashboard Interface
         st.markdown(f"""
             <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 18px; border-radius: 8px; margin-top: 15px; margin-bottom: 20px; font-family: sans-serif;">
                 <h4 style="margin: 0 0 12px 0; color: #1e293b;">📊 Execution Cost Analytics Tracker</h4>

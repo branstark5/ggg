@@ -1,199 +1,170 @@
 import streamlit as st
-from google import genai
-import concurrent.futures
+import re
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from google import genai
 
-# 1. Page Config
-st.set_page_config(page_title="Subtitle Translator", page_icon="🌿", layout="centered")
+# 1. Page Configuration & Layout Customization
+st.set_page_config(
+    page_title="Burmese Subtitle Translator", 
+    page_icon="🌿", 
+    layout="wide"
+)
 
-# 2. Upgraded Soft Green UI CSS
+# Custom injection to preserve your soft-green dashboard interface design
 st.markdown("""
     <style>
-    /* Soft Mint Green Background */
-    .stApp { 
-        background-color: #F0FDF4 !important; 
-        color: #1e293b !important; 
-    }
-    header, footer {visibility: hidden;}
-    
-    /* Remove the default top padding */
-    .block-container {
-        padding-top: 2rem !important;
-    }
-    
-    /* The Custom Dashboard Header */
-    .dashboard-header {
-        background: #ffffff;
-        border: 1px solid #bbf7d0;
-        border-radius: 12px;
-        padding: 20px 25px;
-        box-shadow: 0 4px 20px rgba(34, 197, 94, 0.08);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 25px;
-    }
-    .header-title {
-        font-size: 1.8rem;
-        font-weight: 800;
-        color: #166534;
-        margin: 0;
-    }
-    .status-badge {
-        background: #dcfce7;
-        color: #15803d;
-        padding: 6px 14px;
-        border-radius: 20px;
-        font-size: 0.85rem;
-        font-weight: 700;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        border: 1px solid #bbf7d0;
-    }
-    .status-dot {
-        height: 8px;
-        width: 8px;
-        background-color: #22c55e;
-        border-radius: 50%;
-        display: inline-block;
-        box-shadow: 0 0 8px #22c55e;
-        animation: pulse 2s infinite;
-    }
-    @keyframes pulse {
-        0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
-        70% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
-    }
-    
-    /* Crisp White Card for Controls */
-    div[data-testid="stForm"], div[data-testid="stVerticalBlock"] > div:nth-of-type(2) {
-        background: #ffffff !important; 
-        border: 1px solid #bbf7d0 !important; 
-        border-radius: 12px !important; 
-        padding: 25px !important;
-        box-shadow: 0 4px 20px rgba(34, 197, 94, 0.08) !important;
-    }
-    
-    /* Force text to be dark readable slate */
-    label, p, span, .st-markdown { 
-        color: #334155 !important; 
-    }
-    
-    /* Soft Green Action Button */
-    .stButton > button {
-        background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%) !important; 
-        color: white !important; 
-        font-weight: bold !important; 
-        font-size: 1.05rem !important;
-        width: 100% !important;
-        border: none !important;
-        border-radius: 8px !important;
-        padding: 12px !important;
-        box-shadow: 0 4px 10px rgba(34, 197, 94, 0.25) !important;
-        transition: all 0.3s ease !important;
-        margin-top: 10px !important;
-    }
-    .stButton > button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 15px rgba(34, 197, 94, 0.4) !important;
-    }
-    
-    /* File Uploader tweaks */
-    div[data-testid="stFileUploader"] {
-        border: 2px dashed #86efac !important;
-        background-color: #f8fafc !important;
-        border-radius: 10px !important;
-    }
+    .main .block-container { max-width: 1100px; padding-top: 2rem; }
+    div.stButton > button:first-child { background-color: #10b981; color: white; border: none; }
+    div.stButton > button:first-child:hover { background-color: #059669; color: white; }
     </style>
 """, unsafe_allow_html=True)
 
-# 3. The Dashboard Header
-st.markdown("""
-    <div class="dashboard-header">
-        <div class="header-title">Burmese Subtitle Translator</div>
-        <div class="status-badge">
-            <span class="status-dot"></span> API Ready
-        </div>
-    </div>
-""", unsafe_allow_html=True)
+st.title("🎬 Etheris Space - Premium Subtitle Translator")
+st.caption("Parallel-threaded SRT processing built for Gemini 3.1 & 3.5 series engines.")
 
-# 4. Settings Controls
+# 2. Secure API Key Initialization 
+# Looks for Streamlit Advanced Secrets or falls back to an interactive sidebar input
+api_key = st.secrets.get("GEMINI_API_KEY") or st.sidebar.text_input("Enter Gemini API Key", type="password")
+
+if not api_key:
+    st.warning("⚠️ Access Key Missing. Please set up GEMINI_API_KEY inside your platform deployment settings to proceed.")
+    st.stop()
+
+# Initialize the modern unified Google GenAI client
+client = genai.Client(api_key=api_key)
+
+# 3. Dynamic User Configuration Dashboard
 col1, col2, col3 = st.columns(3)
 with col1:
     model_choice = st.selectbox(
-        "AI Engine", 
-        ["gemini-3.1-flash-lite", "gemini-2.5-flash", "gemini-3-flash"],
-        help="3.1 Flash-Lite က အသစ်ထွက်ထားတာမို့လို့ ပိုက်ဆံဝက်သက်သာပြီး ဘာသာပြန်တာ အရမ်းတော်ပါတယ်။"
+        "AI Engine Selection", 
+        ["gemini-3.1-flash-lite", "gemini-3.5-flash", "gemini-2.5-flash"],
+        help="3.1 Flash-Lite is optimized for hyper-budget scale. 3.5 Flash delivers high-end localization quality."
     )
 with col2:
-    chunk_size = st.slider("Lines per Request", 30, 150, 85)
+    chunk_size = st.slider("Lines per Request Chunk", 20, 150, 75)
 with col3:
-    parallel_workers = st.slider("Parallel Threads", 1, 10, 6)
-    
-uploaded_file = st.file_uploader("Upload SRT", type=["srt"])
+    parallel_workers = st.slider("Parallel Active Threads", 1, 10, 5)
 
-# -----------------------------------------
-# The Parallel Worker Function
-# -----------------------------------------
-def translate_single_chunk(chunk_data):
-    idx, chunk_text, api_token, model = chunk_data
-    local_client = genai.Client(api_key=api_token)
-    prompt = f"""You are a professional film localizer. Translate the dialogue text into natural, colloquial spoken Burmese (လူပြောစကား). 
-    Strictly maintain the exact numbers, timeline codes, and formatting. Output only the translated SRT content.
-    
-    CONTENT TO TRANSLATE:
-    {chunk_text}"""
-    
-    response = local_client.models.generate_content(
-        model=model,
-        contents=prompt,
-    )
-    return idx, response.text.strip()
+# 4. SRT Parsing Helper Engine
+def parse_srt(srt_text):
+    # Splits file cleanly while preserving line blocks safely
+    blocks = re.split(r'\n\s*\n', srt_text.strip())
+    return [b for b in blocks if b.strip()]
 
-# -----------------------------------------
-# Execution Logic
-# -----------------------------------------
-if st.button("Translate Subtitles") and uploaded_file and api_key:
+# 5. Core Translation Processing Node
+def translate_chunk(chunk_index, chunk_data, model_name):
+    system_prompt = f"""You are an expert film localization translator specializing in translating English subtitles into natural, spoken Burmese (လူပြောစကား).
+
+CRITICAL RULES:
+1. STRICTLY preserve all original layout formats, chronological timestamps, index integers, and line spaces. Do not alter them.
+2. Translate only the conversational or narrative lines. If character headers or production tags are present, preserve them exactly.
+3. Keep the translation tone highly natural and contextually appropriate for fluid video dialogue. Do not be formal or literal.
+
+SRT Chunk to Translate:
+{chunk_data}
+"""
     try:
-        raw_content = uploaded_file.read().decode("utf-8")
-        blocks = raw_content.replace("\r\n", "\n").strip().split("\n\n")
+        response = client.models.generate_content(
+            model=model_name,
+            contents=system_prompt
+        )
         
-        chunk_packages = []
-        for idx, i in enumerate(range(0, len(blocks), chunk_size)):
-            chunk = blocks[i:i + chunk_size]
-            chunk_packages.append((idx, "\n\n".join(chunk), api_key, model_choice))
-            
-        st.info(f"✨ File split into {len(chunk_packages)} sequence blocks. Processing...")
+        # Safely extract generated text and backend token metric structures
+        input_tokens = getattr(response.usage_metadata, 'prompt_token_count', 0)
+        output_tokens = getattr(response.usage_metadata, 'candidates_token_count', 0)
         
+        return {
+            "index": chunk_index,
+            "text": response.text,
+            "success": True,
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens
+        }
+    except Exception as e:
+        # Graceful error bypass: retains original text block to prevent file breakage
+        return {
+            "index": chunk_index,
+            "text": chunk_data,
+            "success": False,
+            "error": str(e),
+            "input_tokens": 0,
+            "output_tokens": 0
+        }
+
+# 6. Primary Execution Lifecycle
+uploaded_file = st.file_uploader("Upload your target English SRT file", type=["srt"])
+
+if uploaded_file is not None:
+    srt_content = uploaded_file.read().decode("utf-8")
+    blocks = parse_srt(srt_content)
+    
+    # Bundle individual blocks into structural arrays based on slider selections
+    chunks = [blocks[i:i + chunk_size] for i in range(0, len(blocks), chunk_size)]
+    st.info(f"Loaded {len(blocks):,} subtitle elements mapped across {len(chunks)} execution chunks.")
+    
+    if st.button("🚀 Execute Subtitle Translation", type="primary"):
         progress_bar = st.progress(0)
         status_text = st.empty()
         
-        completed_results = []
+        translated_chunks = [None] * len(chunks)
+        total_input_tokens = 0
+        total_output_tokens = 0
+        error_tracking_count = 0
+        
         start_time = time.time()
         
-        with concurrent.futures.ThreadPoolExecutor(max_workers=parallel_workers) as executor:
-            futures = [executor.submit(translate_single_chunk, pkg) for pkg in chunk_packages]
+        # Asynchronous Parallel Multi-Threading Loop
+        with ThreadPoolExecutor(max_workers=parallel_workers) as executor:
+            future_to_chunk = {
+                executor.submit(translate_chunk, idx, "\n\n".join(chunk), model_choice): idx 
+                for idx, chunk in enumerate(chunks)
+            }
             
-            for count, future in enumerate(concurrent.futures.as_completed(futures)):
-                completed_results.append(future.result())
-                progress = (count + 1) / len(chunk_packages)
-                progress_bar.progress(progress)
-                status_text.caption(f"Processing... ({count + 1}/{len(chunk_packages)} blocks completed)")
-
-        completed_results.sort(key=lambda x: x[0])
-        final_output = [result[1] for result in completed_results]
-        complete_srt = "\n\n".join(final_output)
+            completed = 0
+            for future in as_completed(future_to_chunk):
+                idx = future_to_chunk[future]
+                result = future.result()
+                
+                translated_chunks[idx] = result["text"]
+                total_input_tokens += result["input_tokens"]
+                total_output_tokens += result["output_tokens"]
+                
+                if not result["success"]:
+                    error_tracking_count += 1
+                
+                completed += 1
+                progress_bar.progress(completed / len(chunks))
+                status_text.text(f"Processing structural volume: {completed}/{len(chunks)} chunks finalized...")
         
         end_time = time.time()
-        st.success(f"🎉 Translation complete in {round(end_time - start_time, 1)} seconds!")
+        status_text.empty()
         
+        # Reconstruct structural layout output
+        final_srt = "\n\n".join(translated_chunks)
+        
+        if error_tracking_count > 0:
+            st.warning(f"⚠️ App finished execution with {error_tracking_count} processing errors. Bypassed modules retained English text fields.")
+        else:
+            st.success(f"🎉 Job completed successfully in {round(end_time - start_time, 1)} seconds!")
+        
+        # 7. Analytics Dashboard Reporting Interface
+        st.markdown(f"""
+            <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 18px; border-radius: 8px; margin-top: 15px; margin-bottom: 20px; font-family: sans-serif;">
+                <h4 style="margin: 0 0 12px 0; color: #1e293b;">📊 Execution Cost Analytics Tracker</h4>
+                <div style="display: flex; gap: 40px; font-size: 0.95rem; color: #334155;">
+                    <p style="margin: 0;">📥 <b>Processed Input:</b> {total_input_tokens:,} tokens</p>
+                    <p style="margin: 0;">📤 <b>Generated Output:</b> {total_output_tokens:,} tokens</p>
+                    <p style="margin: 0; color: #10b981;">⚙️ <b>Active Host Engine:</b> <code>{model_choice}</code></p>
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+        
+        # Local File Download Trigger
         st.download_button(
-            label="Download .SRT File",
-            data=complete_srt,
-            file_name="translated_burmese.srt",
+            label="💾 Download Burmese SRT File",
+            data=final_srt,
+            file_name=f"Burmese_Localized_{uploaded_file.name}",
             mime="text/plain"
         )
-        
-    except Exception as e:
-        st.error(f"System Error: {str(e)}")

@@ -118,29 +118,19 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# 4. Settings Controls with Tooltips
-api_key = st.text_input("API Key", type="password")
-
+# 4. Settings Controls
 col1, col2, col3 = st.columns(3)
 with col1:
     model_choice = st.selectbox(
         "AI Engine", 
-        ["gemini-2.5-flash-lite", "gemini-3.5-flash"],
-        help="2.5 Flash is cheaper and has higher free limits. 3.5 Flash is smarter but costs more."
+        ["gemini-3.1-flash-lite", "gemini-2.5-flash", "gemini-3-flash"],
+        help="3.1 Flash-Lite က အသစ်ထွက်ထားတာမို့လို့ ပိုက်ဆံဝက်သက်သာပြီး ဘာသာပြန်တာ အရမ်းတော်ပါတယ်။"
     )
 with col2:
-    chunk_size = st.slider(
-        "Lines per Request", 
-        30, 150, 70,
-        help="How many lines are translated at once. Set to 70-100 to save your daily request limits."
-    )
+    chunk_size = st.slider("Lines per Request", 30, 150, 85)
 with col3:
-    parallel_workers = st.slider(
-        "Parallel Threads", 
-        1, 10, 5,
-        help="How many chunks translate at the EXACT same time. Higher (5-10) is much faster, but requires a paid billing account."
-    )
-
+    parallel_workers = st.slider("Parallel Threads", 1, 10, 6)
+    
 uploaded_file = st.file_uploader("Upload SRT", type=["srt"])
 
 # -----------------------------------------

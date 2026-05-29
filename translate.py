@@ -64,12 +64,21 @@ def translate_chunk(client, chunk_index, chunk_data, model_name):
     system_prompt = f"""You are an expert film localization translator translating English subtitles to natural, smooth, spoken Burmese (လူပြောစကား).
 
 CRITICAL RULES FOR BURMESE SUBTITLES:
-1. CASUAL & NATURAL TONE: The dialogue must sound like real people talking. Avoid stiff, literal textbook translations. Use everyday conversational Burmese. Formal words (like ကျွန်တော်/ကျွန်မ) should ONLY be used when speaking to a boss, elders, or strangers.
+1. CASUAL & NATURAL TONE: The dialogue must sound like real people talking. Avoid stiff, literal textbook translations (စာဆန်ဆန်). Use everyday conversational Burmese. Formal words (like ကျွန်တော်/ကျွန်မ) should ONLY be used when speaking to a boss, elders, or strangers.
 2. MAN-TO-MAN DIALOGUE: NEVER use "နင်" for "you" between two male characters. Use "မင်း", "အစ်ကို", "ညီလေး", or casual names. "နင်" should only be used between female friends, or when a woman is speaking to someone.
-3. AGE & GENDER PRONOUNS: Translate "I" correctly based on context. Older characters MUST NEVER use "သမီး" or "သား" for themselves. Use mature terms (အဘွား, အဘိုး, ဦးလေး, အဒေါ်) or casual "ငါ". Do not use childish terms like ဘိုးဘိုး or ဒေါ်ဒေါ်.
-4. CONCISE & PUNCHY (မလိုရင်းတွေဖြတ်): Subtitles must be fast and easy to read before the scene cuts. Cut unnecessary filler words. Frame sentences to be punchy while keeping the core emotion and meaning intact.
-5. CLEAN OUTPUT (NO ENGLISH): You MUST ONLY output the translated Burmese dialogue. Never append, leak, or copy original English words or metadata into the translated lines.
-6. EXACT FORMATTING: STRICTLY preserve all index integers, timestamps (00:00:00,000 --> 00:00:00,000), and empty line breaks exactly as input. No skipping lines.
+3. AGE & GENDER PRONOUNS: Translate "I" correctly based on context. Older characters MUST NEVER use "သမီး" or "သား" for themselves. Use mature terms (အဘွား, အဘိုး, ဦးလေး, အဒေါ်) or casual "ငါ".
+4. CONCISE & PUNCHY (မလိုရင်းတွေဖြတ်): Subtitles must be fast and easy to read before the scene cuts. Cut unnecessary filler words. Frame sentences to be punchy while keeping the core emotion.
+5. FORMATTING & CLEAN OUTPUT: STRICTLY preserve all index integers, timestamps (00:00:00,000 --> 00:00:00,000), and empty line breaks exactly as input. NEVER leak or copy original English text into the output.
+
+--- EXAMPLES OF EXPECTED TONE ---
+English: "So, you got a wife?"
+BAD (Textbook): ဒါနဲ့ မင်းမှာ ဇနီးသည် ရှိလား။
+GOOD (Spoken): ဒါနဲ့... မင်းမှာ မိန်းမရှိလား။
+
+English: "Not that it's ever stopped me from having a good time."
+BAD (Textbook): ဒါပေမဲ့ အဲ့ဒါကလည်း တစ်ခါမှတော့ ငါ့ကို ပျော်ရွှင်ဖို့အတွက် တားဆီးမထားနိုင်ပါဘူးလေ။
+GOOD (Spoken): ဒါပေမဲ့ အဲ့ဒါကြောင့်နဲ့တော့ ငါပျော်ဖို့ပါးဖို့ တားမရပါဘူးလေ။
+---------------------------------
 
 Input SRT Chunk:
 {chunk_data}

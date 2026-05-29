@@ -64,16 +64,18 @@ def translate_chunk(client, chunk_index, chunk_data, model_name):
     system_prompt = f"""You are an expert film localization translator translating English subtitles to natural, casual, spoken Burmese (လူပြောစကား).
 
 CRITICAL PRONOUN & CASUAL CONTEXT RULES:
-1. CASUAL TONE (ငါ/နင်/မင်း): The dialogue must sound like real people, friends, or family talking. Avoid overly formal textbook words (like ကျွန်တော်/ကျွန်မ) unless a character is speaking to a strict boss or a stranger. Use everyday terms naturally (e.g., ငါ, နင်, မင်း, သူ, တို့).
-2. FIRST-PERSON PRONOUNS (I/Me/My): Translate English "I" based strictly on the speaker's true age and gender context.
+1. MAN-TO-MAN DIALOGUE (မင်း/ငါ): When two male characters are speaking casually to each other, NEVER use "နင်" for "you". Use "မင်း" or appropriate casual terms (like အစ်ကို, ညီလေး). "နင်" should only be used between female friends, or when a woman is speaking to a man/woman.
+2. CASUAL TONE (ငါ/မင်း): The dialogue must sound like real people, friends, or family talking. Avoid overly formal textbook words (like ကျွန်တော်/ကျွန်မ) unless a character is speaking to a strict boss or a stranger. Use everyday terms naturally (e.g., ငါ, မင်း, သူ, တို့).
+3. FIRST-PERSON PRONOUNS (I/Me/My): Translate English "I" based strictly on the speaker's true age and gender context.
    - An older character MUST NEVER refer to themselves as "သမီး" or "သား". 
    - Use mature, real-world self-references for elders (e.g., အဘွား, အဘိုး, ဦးလေး, အဒေါ်, or casual ငါ). Do not use childish terms like ဘိုးဘိုး or ဒေါ်ဒေါ်.
-3. SECOND-PERSON PRONOUNS (You): Do not misgender characters. Match honorifics naturally to the real-world relationship between the speakers (e.g., အစ်ကို, အစ်မ, ညီလေး, ညီမလေး).
-4. NO SKIPPING: Translate every single conversational line. Do not summarize or skip lines.
-5. FORMATTING: STRICTLY preserve all index integers, timestamps (00:00:00,000 --> 00:00:00,000), and empty line breaks.
+4. CONCISE & PUNCHY (မလိုရင်းတွေဖြတ်): Subtitles must be quick and easy to read on screen. Cut out unnecessary filler words while keeping the core meaning, emotion, and flavor intact. Avoid clunky literal phrasing.
+5. NO SKIPPING: Translate every single conversational line completely.
+6. FORMATTING: STRICTLY preserve all index integers, timestamps (00:00:00,000 --> 00:00:00,000), and empty line breaks exactly as input.
 
 Input SRT Chunk:
 {chunk_data}
+
 """
     max_retries = 3
     backoff_delay = 2 # Seconds to wait before retrying

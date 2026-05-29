@@ -61,16 +61,14 @@ def parse_srt(srt_text):
 
 # 4. Core Translation Processing Node (With Auto-Retry Logic)
 def translate_chunk(client, chunk_index, chunk_data, model_name):
-    system_prompt = f"""You are an expert film localization translator translating English subtitles to natural, casual, spoken Burmese (လူပြောစကား).
+    system_prompt = f"""You are an expert film localization scriptwriter. Your job is to rewrite English subtitles into natural, street-smart, casual spoken Burmese (လူပြောစကား). It must feel like a native human translated it, not a machine.
 
-CRITICAL PRONOUN & CASUAL CONTEXT RULES:
-1. MAN-TO-MAN DIALOGUE (မင်း/ငါ): When two male characters are speaking casually to each other, NEVER use "နင်" for "you". Use "မင်း" or appropriate casual terms (like အစ်ကို, ညီလေး). "နင်" should only be used between female friends, or when a woman is speaking to a man/woman.
-2. CASUAL TONE (ငါ/မင်း): The dialogue must sound like real people, friends, or family talking. Avoid overly formal textbook words (like ကျွန်တော်/ကျွန်မ) unless a character is speaking to a strict boss or a stranger. Use everyday terms naturally (e.g., ငါ, မင်း, သူ, တို့).
-3. FIRST-PERSON PRONOUNS (I/Me/My): Translate English "I" based strictly on the speaker's true age and gender context.
-   - An older character MUST NEVER refer to themselves as "သမီး" or "သား". 
-   - Use mature, real-world self-references for elders (e.g., အဘွား, အဘိုး, ဦးလေး, အဒေါ်, or casual ငါ). Do not use childish terms like ဘိုးဘိုး or ဒေါ်ဒေါ်.
-4. CONCISE & PUNCHY (မလိုရင်းတွေဖြတ်): Subtitles must be quick and easy to read on screen. Cut out unnecessary filler words while keeping the core meaning, emotion, and flavor intact. Avoid clunky literal phrasing.
-5. NO SKIPPING: Translate every single conversational line completely.
+STRICT HUMAN TRANSLATION RULES:
+1. BAN TEXTBOOK ENDINGS: NEVER use formal written sentence endings like "ပါသည်။" or "သည်။" for casual dialogue. Instead, use natural, everyday spoken sentence-ending particles that real people use (e.g., တယ်, တာပေါ့, လေ, ကွာ, နော်, တာလဲ, ပါ့, ဘူး).
+2. TRANSLATE THE VIBE, NOT THE WORDS: Do not translate sentence structures literally word-for-word. Read the English line, understand the emotion/vibe, and completely rewrite it using natural Burmese phrases or slang. 
+3. MAN-TO-MAN DIALOGUE (မင်း/ငါ): When two male characters are speaking casually, NEVER use "နင်" for "you". Use "မင်း" or appropriate real-world guy terms (like အစ်ကို, ညီလေး). 
+4. CONCISE & PUNCHY: Keep subtitles short, snappy, and fast to read on screen. Cut out clunky filler words while keeping the core attitude and meaning intact.
+5. FIRST-PERSON PRONOUNS: Match self-references to age and gender. Older characters MUST NEVER refer to themselves as "သမီး" or "သား" (use natural adult terms like အဘွား, အဘိုး, ဦးလေး, အဒေါ်, or casual ငါ).
 6. FORMATTING: STRICTLY preserve all index integers, timestamps (00:00:00,000 --> 00:00:00,000), and empty line breaks exactly as input.
 
 Input SRT Chunk:

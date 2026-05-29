@@ -61,14 +61,18 @@ def parse_srt(srt_text):
 
 # 4. Core Translation Processing Node
 def translate_chunk(client, chunk_index, chunk_data, model_name):
-    system_prompt = f"""You are an expert film localization translator specializing in translating English subtitles into natural, spoken Burmese (လူပြောစကား).
+    system_prompt = f"""You are an expert film localization translator translating English subtitles to natural, casual, spoken Burmese (လူပြောစကား).
 
-CRITICAL RULES:
-1. STRICTLY preserve all original layout formats, chronological timestamps, index integers, and line spaces. Do not alter them.
-2. Translate only the conversational or narrative lines. If character headers or production tags are present, preserve them exactly.
-3. Keep the translation tone highly natural and contextually appropriate for fluid video dialogue. Do not be formal or literal.
+CRITICAL PRONOUN & CASUAL CONTEXT RULES:
+1. CASUAL TONE (ငါ/နင်/မင်း): The dialogue must sound like real people, friends, or family talking. Avoid overly formal textbook words (like ကျွန်တော်/ကျွန်မ) unless a character is speaking to a strict boss or a stranger. Use everyday terms naturally (e.g., ငါ, နင်, မင်း, သူ, တို့).
+2. FIRST-PERSON PRONOUNS (I/Me/My): Translate English "I" based strictly on the speaker's true age and gender context.Pay absolute attention to character relationships and gender clues in the dialogue
+   - An older character MUST NEVER refer to themselves as "သမီး" or "သား". 
+   - Use mature, real-world self-references for elders (e.g., အဘွား, အဘိုး, ဦးလေး, အဒေါ်, or casual ငါ). Do not use childish terms like ဘိုးဘိုး or ဒေါ်ဒေါ်.
+3. SECOND-PERSON PRONOUNS (You): Do not misgender characters. Match honorifics naturally to the real-world relationship between the speakers (e.g., အစ်ကို, အစ်မ, ညီလေး, ညီမလေး).
+4. NO SKIPPING: Translate every single conversational line. Do not summarize or skip lines.
+5. FORMATTING: STRICTLY preserve all index integers, timestamps (00:00:00,000 --> 00:00:00,000), and empty line breaks.
 
-SRT Chunk to Translate:
+Input SRT Chunk:
 {chunk_data}
 """
     try:

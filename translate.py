@@ -59,13 +59,13 @@ def parse_srt(srt_text):
     blocks = re.split(r'\n\s*\n', srt_text.strip())
     return [b for b in blocks if b.strip()]
 
-# 4. Core Translation Processing Node
+# 4. Core Translation Processing Node (With Auto-Retry Logic)
 def translate_chunk(client, chunk_index, chunk_data, model_name):
     system_prompt = f"""You are an expert film localization translator translating English subtitles to natural, casual, spoken Burmese (လူပြောစကား).
 
 CRITICAL PRONOUN & CASUAL CONTEXT RULES:
 1. CASUAL TONE (ငါ/နင်/မင်း): The dialogue must sound like real people, friends, or family talking. Avoid overly formal textbook words (like ကျွန်တော်/ကျွန်မ) unless a character is speaking to a strict boss or a stranger. Use everyday terms naturally (e.g., ငါ, နင်, မင်း, သူ, တို့).
-2. FIRST-PERSON PRONOUNS (I/Me/My): Translate English "I" based strictly on the speaker's true age and gender context.Pay absolute attention to character relationships and gender clues in the dialogue
+2. FIRST-PERSON PRONOUNS (I/Me/My): Translate English "I" based strictly on the speaker's true age and gender context.
    - An older character MUST NEVER refer to themselves as "သမီး" or "သား". 
    - Use mature, real-world self-references for elders (e.g., အဘွား, အဘိုး, ဦးလေး, အဒေါ်, or casual ငါ). Do not use childish terms like ဘိုးဘိုး or ဒေါ်ဒေါ်.
 3. SECOND-PERSON PRONOUNS (You): Do not misgender characters. Match honorifics naturally to the real-world relationship between the speakers (e.g., အစ်ကို, အစ်မ, ညီလေး, ညီမလေး).
@@ -75,32 +75,40 @@ CRITICAL PRONOUN & CASUAL CONTEXT RULES:
 Input SRT Chunk:
 {chunk_data}
 """
-    try:
-        response = client.models.generate_content(
-            model=model_name,
-            contents=system_prompt
-        )
-        
-        input_tokens = getattr(response.usage_metadata, 'prompt_token_count', 0)
-        output_tokens = getattr(response.usage_metadata, 'candidates_token_count', 0)
-        
-        return {
-            "index": chunk_index,
-            "text": response.text,
-            "success": True,
-            "input_tokens": input_tokens,
-            "output_tokens": output_tokens
-        }
-    except Exception as e:
-        return {
-            "index": chunk_index,
-            "text": chunk_data,
-            "success": False,
-            "error": str(e),
-            "input_tokens": 0,
-            "output_tokens": 0
-        }
-
+    max_retries = 3
+    backoff_delay = 2 # Seconds to wait before retrying
+    
+    for attempt in range(max_retries):
+        try:
+            response = client.models.generate_content(
+                model=model_name,
+                contents=system_prompt
+            )
+            
+            input_tokens = getattr(response.usage_metadata, 'prompt_token_count', 0)
+            output_tokens = getattr(response.usage_metadata, 'candidates_token_count', 0)
+            
+            return {
+                "index": chunk_index,
+                "text": response.text,
+                "success": True,
+                "input_tokens": input_tokens,
+                "output_tokens": output_tokens
+            }
+        except Exception as e:
+            # If it's the last attempt and it still fails, return the failure state
+            if attempt == max_retries - 1:
+                return {
+                    "index": chunk_index,
+                    "text": chunk_data,
+                    "success": False,
+                    "error": str(e),
+                    "input_tokens": 0,
+                    "output_tokens": 0
+                }
+            # Otherwise, pause for a moment and try the exact same block again
+            time.sleep(backoff_delay * (attempt + 1))
+            
 # 5. Primary UI File Uploader
 uploaded_file = st.file_uploader("Upload your target English SRT file", type=["srt"])
 

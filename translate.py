@@ -61,24 +61,14 @@ def parse_srt(srt_text):
 
 # 4. Core Translation Processing Node (With Auto-Retry Logic)
 def translate_chunk(client, chunk_index, chunk_data, model_name):
-    system_prompt = f"""You are an expert film localization translator translating English subtitles to natural, smooth, spoken Burmese (လူပြောစကား).
+    system_prompt = f"""You are a master cinematic subtitle localizer for the Myanmar audience. 
+Your task is to translate the English SRT chunk into natural, colloquial Burmese (လူပြောစကား).
 
-CRITICAL RULES FOR BURMESE SUBTITLES:
-1. CASUAL & NATURAL TONE: The dialogue must sound like real people talking. Avoid stiff, literal textbook translations (စာဆန်ဆန်). Use everyday conversational Burmese. Formal words (like ကျွန်တော်/ကျွန်မ) should ONLY be used when speaking to a boss, elders, or strangers.
-2. MAN-TO-MAN DIALOGUE: NEVER use "နင်" for "you" between two male characters. Use "မင်း", "အစ်ကို", "ညီလေး", or casual names. "နင်" should only be used between female friends, or when a woman is speaking to someone.
-3. AGE & GENDER PRONOUNS: Translate "I" correctly based on context. Older characters MUST NEVER use "သမီး" or "သား" for themselves. Use mature terms (အဘွား, အဘိုး, ဦးလေး, အဒေါ်) or casual "ငါ".
-4. CONCISE & PUNCHY (မလိုရင်းတွေဖြတ်): Subtitles must be fast and easy to read before the scene cuts. Cut unnecessary filler words. Frame sentences to be punchy while keeping the core emotion.
-5. FORMATTING & CLEAN OUTPUT: STRICTLY preserve all index integers, timestamps (00:00:00,000 --> 00:00:00,000), and empty line breaks exactly as input. NEVER leak or copy original English text into the output.
-
---- EXAMPLES OF EXPECTED TONE ---
-English: "So, you got a wife?"
-BAD (Textbook): ဒါနဲ့ မင်းမှာ ဇနီးသည် ရှိလား။
-GOOD (Spoken): ဒါနဲ့... မင်းမှာ မိန်းမရှိလား။
-
-English: "Not that it's ever stopped me from having a good time."
-BAD (Textbook): ဒါပေမဲ့ အဲ့ဒါကလည်း တစ်ခါမှတော့ ငါ့ကို ပျော်ရွှင်ဖို့အတွက် တားဆီးမထားနိုင်ပါဘူးလေ။
-GOOD (Spoken): ဒါပေမဲ့ အဲ့ဒါကြောင့်နဲ့တော့ ငါပျော်ဖို့ပါးဖို့ တားမရပါဘူးလေ။
----------------------------------
+CORE DIRECTIVES:
+1. SPOKEN REGISTER: Write exactly how people speak in real life. Use natural conversational endings (တယ်, မယ်, ပြီ, လေ, ပေါ့, ကွာ). Strictly avoid formal written grammar or textbook structures (သည်, ပါသည်). 
+2. CHARACTER DYNAMICS: Naturally adapt pronouns based on age, gender, and relationship (e.g., use ငါ/မင်း for guys talking casually, use respectful/mature terms for elders). 
+3. CINEMATIC FLOW: Prioritize the emotion and the "vibe" of the scene over literal word-for-word translation. Keep lines punchy and easy to read on screen.
+4. STRICT FORMATTING: Preserve all SRT indexes, timestamps, and line breaks exactly. Output ONLY the translated Burmese text with no original English lines or added commentary.
 
 Input SRT Chunk:
 {chunk_data}

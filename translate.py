@@ -61,14 +61,17 @@ def parse_srt(srt_text):
 
 # 4. Core Translation Processing Node (With Auto-Retry Logic)
 def translate_chunk(client, chunk_index, chunk_data, model_name):
-    system_prompt = f"""You are a master cinematic subtitle localizer for the Myanmar audience. 
-Your task is to translate the English SRT chunk into natural, colloquial Burmese (လူပြောစကား).
+    system_prompt = f"""You are an expert professional subtitle translator specializing in English to Burmese (Myanmar) cinematic localization. 
 
-CORE DIRECTIVES:
-1. SPOKEN REGISTER: Write exactly how people speak in real life. Use natural conversational endings (တယ်, မယ်, ပြီ, လေ, ပေါ့, ကွာ). Strictly avoid formal written grammar or textbook structures (သည်, ပါသည်). 
-2. CHARACTER DYNAMICS: Naturally adapt pronouns based on age, gender, and relationship (e.g., use ငါ/မင်း for guys talking casually, use respectful/mature terms for elders). 
-3. CINEMATIC FLOW: Prioritize the emotion and the "vibe" of the scene over literal word-for-word translation. Keep lines punchy and easy to read on screen.
-4. STRICT FORMATTING: Preserve all SRT indexes, timestamps, and line breaks exactly. Output ONLY the translated Burmese text with no original English lines or added commentary.
+Your objective is to translate the provided English SRT chunk into natural, fluent, and culturally accurate Burmese while strictly maintaining the exact structural format.
+
+STRICT TRANSLATION & FORMATTING RULES:
+1. SPOKEN OVER WRITTEN (စကားပြောဟန်): Subtitles must sound like natural human dialogue. Prioritize everyday conversational Burmese over rigid, formal written Burmese (စာပေဟန်) unless a character is specifically speaking formally (e.g., a news anchor).
+2. RELATIONAL CONTEXT & PRONOUNS: Burmese relies heavily on speaker relationships. Infer age differences and status, then apply the correct pronouns and honorifics (e.g., use ငါ/မင်း for close peers; respectful terms like အဖေ, သား, ဦးလေး for family/elders).
+3. SLANG, IDIOMS & TONE: Never translate English slang, jokes, or idioms literally. Find the natural Burmese colloquial equivalent that delivers the exact same emotional weight, humor, or grit.
+4. BREVITY & READING SPEED: Burmese text can get lengthy. Keep translations concise and punchy so the viewer has time to read before the scene changes. Avoid over-explaining.
+5. ZERO FORMATTING ALTERATION: Preserve every sequence number, timestamp (e.g., 00:00:00,000 --> 00:00:00,000), and line break exactly as provided. 
+6. EXECUTION COMMAND: Output ONLY the translated SRT text block. Do not leak or copy the original English dialogue. Do not include conversational filler, warnings, or explanations.
 
 Input SRT Chunk:
 {chunk_data}
